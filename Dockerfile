@@ -3,21 +3,25 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore dependencies
-COPY BackEndProject/BackEndProject.csproj BackEndProject/
-RUN dotnet restore BackEndProject/BackEndProject.csproj
+COPY TMCC.csproj ./
+RUN dotnet restore "TMCC.csproj"
 
 # Copy the rest of the files
 COPY . .
 
 # Publish the app
-WORKDIR /src/BackEndProject
-RUN dotnet publish -c Release -o /app/out
+RUN dotnet publish "TMCC.csproj" -c Release -o /app/publish
 
 # Use runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
-COPY --from=build /app/out .
 
-# Expose port and start
-EXPOSE 5000
-ENTRYPOINT ["dotnet", "BackEndProject.dll"]
+# Copy published files from build stage
+COPY --from=build /app/publish .
+
+# Expose port (Render uses PORT environment variable)
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+
+# Start the application
+ENTRYPOINT ["dotnet", "TMCC.dll"]
