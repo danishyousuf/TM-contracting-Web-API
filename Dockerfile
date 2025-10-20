@@ -1,20 +1,23 @@
-# Use the official .NET image as a build stage
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
-WORKDIR /app
-EXPOSE 80
-
+# Use .NET SDK image for building
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
-COPY ["BackEndProject/BackEndProject.csproj", "BackEndProject/"]
-RUN dotnet restore "BackEndProject/BackEndProject.csproj"
+
+# Copy csproj and restore dependencies
+COPY BackEndProject/BackEndProject.csproj BackEndProject/
+RUN dotnet restore BackEndProject/BackEndProject.csproj
+
+# Copy the rest of the files
 COPY . .
-WORKDIR "/src/BackEndProject"
-RUN dotnet build "BackEndProject.csproj" -c Release -o /app/build
 
-FROM build AS publish
-RUN dotnet publish "BackEndProject.csproj" -c Release -o /app/publish
+# Publish the app
+WORKDIR /src/BackEndProject
+RUN dotnet publish -c Release -o /app/out
 
-FROM base AS final
+# Use runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/out .
+
+# Expose port and start
+EXPOSE 5000
 ENTRYPOINT ["dotnet", "BackEndProject.dll"]
