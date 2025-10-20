@@ -1,5 +1,5 @@
 # Use .NET SDK image for building
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore dependencies
@@ -13,7 +13,7 @@ COPY . .
 RUN dotnet publish "TMCC.csproj" -c Release -o /app/publish
 
 # Use runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:9.0
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
 # Copy published files from build stage
