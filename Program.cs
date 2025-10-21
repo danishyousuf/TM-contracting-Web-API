@@ -125,10 +125,14 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin()
+    {
+        policy.SetIsOriginAllowed(origin => true) 
               .AllowAnyHeader()
-              .AllowAnyMethod());
+              .AllowAnyMethod()
+              .AllowCredentials(); 
+    });
 });
+
 
 // Dependency Injection
 builder.Services.AddScoped<IJwtService, JwtService>();
