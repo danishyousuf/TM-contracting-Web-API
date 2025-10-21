@@ -10,7 +10,7 @@ using TMCC.Repository;
 using TMCC.Repository.IRepository;
 using TMCC.Services;
 using TMCC.Services.IServices;
-using Quartz; 
+using Quartz;
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
@@ -26,11 +26,9 @@ builder.Host.UseSerilog();
 
 // Add services
 builder.Services.AddControllers();
-
-// Register HttpClient
 builder.Services.AddHttpClient();
 
-/// Email config
+// Email configuration
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection("EmailSettings")
 );
@@ -52,19 +50,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.RequireHttpsMetadata = false;
         options.SaveToken = true;
 
-        var jwtSettings = builder.Configuration.GetSection("Jwt");
-        var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]);
-        var issuer = jwtSettings["Issuer"];
-        var audience = jwtSettings["Audience"];
-
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
             ValidateIssuer = true,
-            ValidIssuer = issuer,
+            ValidIssuer = jwtIssuer,
             ValidateAudience = true,
-            ValidAudience = audience,
+            ValidAudience = jwtAudience,
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
@@ -74,10 +67,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             OnAuthenticationFailed = context =>
             {
                 Serilog.Log.Error(context.Exception, "JWT Authentication failed: {Message}", context.Exception.Message);
-
                 if (context.Exception is SecurityTokenExpiredException)
                 {
-                    Serilog.Log.Warning("Token expired at {Expiry}", context.Exception.Data["expiry"]);
                     context.Response.Headers.Append("Token-Expired", "true");
                 }
                 return Task.CompletedTask;
@@ -87,27 +78,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 Serilog.Log.Information("JWT Token validated successfully for user: {UserId}", userId);
                 return Task.CompletedTask;
-            },
-            OnChallenge = context =>
-            {
-                Serilog.Log.Warning("Authorization challenge: {Error} - {Description}", context.Error, context.ErrorDescription);
-                return Task.CompletedTask;
-            },
-            OnMessageReceived = context =>
-            {
-                var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-                if (!string.IsNullOrEmpty(token))
-                    Serilog.Log.Information("Token received in request: {Token}", token);
-                else
-                    Serilog.Log.Warning("No token found in request header.");
-
-                return Task.CompletedTask;
             }
         };
     });
 
 builder.Services.AddAuthorization();
-
 
 // Swagger with JWT
 builder.Services.AddEndpointsApiExplorer();
@@ -146,14 +121,16 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// CORS
+// CORS policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod());
 });
 
-
-// DI (your services)
+// Dependency Injection
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<DapperHelper>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -170,51 +147,34 @@ builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IEmployeeHistoryAndStatusRepository, EmployeeHistoryAndStatusRepository>();
 builder.Services.AddScoped<IEmployeeHistoryAndStatusService, EmployeeHistoryAndStatusService>();
-
-// ============================================
-// NEW: Email Service & Quartz Scheduler
-// ============================================
-
-// Register Email Service
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-// Configure Quartz Scheduler for automated document expiry checks
-
+// Quartz Scheduler
 builder.Services.AddQuartz(q =>
 {
-    // Client Documents – 10:00 AM
     var clientKey = new JobKey("ClientDocumentExpiryJob");
     q.AddJob<ClientDocumentExpiryJob>(opts => opts.WithIdentity(clientKey));
-    q.AddTrigger(opts => opts
-        .ForJob(clientKey)
-        .WithIdentity("ClientDocumentExpiryTrigger")
-        .WithCronSchedule("0 0 11 * * ?")); // 10 AM daily
+    q.AddTrigger(opts => opts.ForJob(clientKey).WithIdentity("ClientDocumentExpiryTrigger")
+        .WithCronSchedule("0 0 11 * * ?"));
 
-    // Employee Documents – 11:00 AM
     var employeeKey = new JobKey("EmployeeDocumentExpiryJob");
     q.AddJob<EmployeeDocumentExpiryJob>(opts => opts.WithIdentity(employeeKey));
-    q.AddTrigger(opts => opts
-        .ForJob(employeeKey)
-        .WithIdentity("EmployeeDocumentExpiryTrigger")
-        .WithCronSchedule("0 0 11 * * ?")); // 11 AM daily
+    q.AddTrigger(opts => opts.ForJob(employeeKey).WithIdentity("EmployeeDocumentExpiryTrigger")
+        .WithCronSchedule("0 0 11 * * ?"));
 
-    // Company Documents – 12:00 PM
     var companyKey = new JobKey("CompanyDocumentExpiryJob");
     q.AddJob<CompanyDocumentExpiryJob>(opts => opts.WithIdentity(companyKey));
-    q.AddTrigger(opts => opts
-        .ForJob(companyKey)
-        .WithIdentity("CompanyDocumentExpiryTrigger")
-        .WithCronSchedule("0 0 12 * * ?")); // 12 PM daily
+    q.AddTrigger(opts => opts.ForJob(companyKey).WithIdentity("CompanyDocumentExpiryTrigger")
+        .WithCronSchedule("0 0 12 * * ?"));
 });
 
 builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
-// ============================================
-
 var app = builder.Build();
 
+// Middleware order is critical
 if (app.Environment.IsDevelopment())
-{ 
+{
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -223,10 +183,23 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseCors("AllowAll");
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 
-// Authentication before Authorization
+// Handle OPTIONS requests globally (CORS preflight)
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.CompleteAsync();
+    }
+    else
+    {
+        await next();
+    }
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 
