@@ -78,6 +78,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 Serilog.Log.Information("JWT Token validated successfully for user: {UserId}", userId);
                 return Task.CompletedTask;
+            },
+            OnMessageReceived = context =>
+            {
+                // Allow OPTIONS requests to pass through without authentication
+                if (context.Request.Method == "OPTIONS")
+                {
+                    context.NoResult();
+                }
+                return Task.CompletedTask;
             }
         };
     });
@@ -121,7 +130,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// CORS policy
+// CORS policy - Allow all origins
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -129,7 +138,8 @@ builder.Services.AddCors(options =>
         policy.SetIsOriginAllowed(origin => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowCredentials()
+              .WithExposedHeaders("Token-Expired");
     });
 });
 
@@ -175,10 +185,12 @@ builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 var app = builder.Build();
 
-// ✅ CORS must come before everything else
-app.UseCors("AllowAll");
+// ==========================================
+// MIDDLEWARE PIPELINE
+// ORDER IS ABSOLUTELY CRITICAL FOR CORS!
+// ==========================================
 
-// Swagger
+// Swagger (Development only)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -189,25 +201,19 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// STEP 1: CORS FIRST - Must come before Authentication/Authorization
+app.UseCors("AllowAll");
+
+// STEP 2: HTTPS Redirection
 app.UseHttpsRedirection();
 
-// ✅ Handle OPTIONS globally (CORS preflight)
-app.Use(async (context, next) =>
-{
-    if (context.Request.Method == "OPTIONS")
-    {
-        context.Response.StatusCode = 200;
-        await context.Response.CompleteAsync();
-    }
-    else
-    {
-        await next();
-    }
-});
-
+// STEP 3: Authentication (JWT validation)
 app.UseAuthentication();
+
+// STEP 4: Authorization
 app.UseAuthorization();
 
+// STEP 5: Map Controllers
 app.MapControllers();
 
 Log.Information("TMCC API is starting...");
