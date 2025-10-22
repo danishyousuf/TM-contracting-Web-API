@@ -126,13 +126,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.SetIsOriginAllowed(origin => true) 
+        policy.SetIsOriginAllowed(origin => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials(); 
+              .AllowCredentials();
     });
 });
-
 
 // Dependency Injection
 builder.Services.AddScoped<IJwtService, JwtService>();
@@ -176,7 +175,10 @@ builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 var app = builder.Build();
 
-// Middleware order is critical
+// ✅ CORS must come before everything else
+app.UseCors("AllowAll");
+
+// Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -188,9 +190,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
 
-// Handle OPTIONS requests globally (CORS preflight)
+// ✅ Handle OPTIONS globally (CORS preflight)
 app.Use(async (context, next) =>
 {
     if (context.Request.Method == "OPTIONS")
