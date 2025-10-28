@@ -27,20 +27,27 @@ namespace TMCC.Repository
                 "sp_GetOccupiedEmployees", commandType: CommandType.StoredProcedure);
         }
 
-        public async Task MarkEmployeeFreeAsync(string empId)
+        public async Task MarkEmployeeFreeAsync(string empId, DateTime lastWorkingDate)
         {
             var parameters = new DynamicParameters();
             parameters.Add("p_emp_id", empId);
+            parameters.Add("p_last_working_date", lastWorkingDate);
+
             await _dapper.ExecuteNonQueryAsync("sp_MarkEmployeeFree", parameters);
         }
 
-        public async Task MarkEmployeeBusyAsync(string empId, string clientId)
+
+        public async Task MarkEmployeeBusyAsync(string empId, string clientId, DateTime startDate)
         {
             var parameters = new DynamicParameters();
             parameters.Add("p_emp_id", empId);
             parameters.Add("p_client_id", clientId);
+            parameters.Add("p_start_date", startDate);
+            parameters.Add("p_end_date", null);
+
             await _dapper.ExecuteNonQueryAsync("sp_MarkEmployeeBusy", parameters);
         }
+
 
         public async Task<IEnumerable<EmployeeHistoryDto>> GetEmployeeHistoryAsync(string empId)
         {
