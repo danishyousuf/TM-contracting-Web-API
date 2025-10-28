@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TMCC.Models;
 using TMCC.Services.IServices;
 
 namespace TMCC.Controllers
@@ -33,19 +34,29 @@ namespace TMCC.Controllers
 
         [Authorize]
         [HttpPost("free/{empId}")]
-        public async Task<IActionResult> MarkEmployeeFree(string empId)
+        public async Task<IActionResult> MarkEmployeeFree(string empId, [FromQuery] DateTime lastWorkingDate)
         {
-            await _service.MarkEmployeeFreeAsync(empId);
+            if (lastWorkingDate == default)
+                return BadRequest(new { message = "Last working date is required." });
+
+            await _service.MarkEmployeeFreeAsync(empId, lastWorkingDate);
             return Ok(new { message = "Employee marked as free." });
         }
 
+
         [Authorize]
-        [HttpPost("busy/{empId}/{clientId}")]
-        public async Task<IActionResult> MarkEmployeeBusy(string empId, string clientId)
+        [HttpPost("busy")]
+        public async Task<IActionResult> MarkEmployeeBusy([FromBody] AssignEmployeeRequest request)
         {
-            await _service.MarkEmployeeBusyAsync(empId, clientId);
+            Serilog.Log.Information("Employee Assign Start Date is : {StartDate}", request.StartDate);
+            await _service.MarkEmployeeBusyAsync(
+                request.EmpId,
+                request.ClientId,
+                request.StartDate
+            );
             return Ok(new { message = "Employee assigned to client." });
         }
+
 
         [Authorize]
         [HttpGet("history/{empId}")]

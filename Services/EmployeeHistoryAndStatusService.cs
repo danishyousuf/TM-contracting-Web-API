@@ -21,11 +21,14 @@ namespace TMCC.Services
         public Task<IEnumerable<EmployeeOccupiedDto>> GetOccupiedEmployeesAsync()
             => _repo.GetOccupiedEmployeesAsync();
 
-        public Task MarkEmployeeFreeAsync(string empId)
-            => _repo.MarkEmployeeFreeAsync(empId);
+        public Task MarkEmployeeFreeAsync(string empId, DateTime lastWorkingDate)
+           => _repo.MarkEmployeeFreeAsync(empId, lastWorkingDate);
 
-        public Task MarkEmployeeBusyAsync(string empId, string clientId)
-            => _repo.MarkEmployeeBusyAsync(empId, clientId);
+
+        public Task MarkEmployeeBusyAsync(string empId, string clientId, DateTime startDate)
+           => _repo.MarkEmployeeBusyAsync(empId, clientId, startDate);
+
+
 
         public Task<IEnumerable<EmployeeHistoryDto>> GetEmployeeHistoryAsync(string empId)
             => _repo.GetEmployeeHistoryAsync(empId);

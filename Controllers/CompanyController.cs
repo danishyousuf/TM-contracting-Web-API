@@ -16,7 +16,7 @@ namespace TMCC.Controllers
         {
             _service = service;
         }
-        
+
         [Authorize]
         [HttpGet("details")]
         public async Task<IActionResult> GetCompanyDetails()
