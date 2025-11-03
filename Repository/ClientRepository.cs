@@ -208,6 +208,20 @@ namespace TMCC.Repository
                 CommandType.StoredProcedure
             );
         }
+        public async Task<int> RenewClientDocumentExpiryAsync(Guid documentId, Guid clientId, string newExpiryDate, string updatedBy)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("p_document_id", documentId.ToString());
+            parameters.Add("p_client_id", clientId.ToString());
+            parameters.Add("p_new_expiry_date", newExpiryDate);
+            parameters.Add("p_updated_by", updatedBy);
+
+            return await _dapperHelper.ExecuteNonQueryAsync(
+                "sp_RenewClientDocumentExpiry",
+                parameters
+            );
+        }
+
 
     }
 }

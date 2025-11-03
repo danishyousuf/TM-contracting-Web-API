@@ -165,5 +165,27 @@ namespace TMCC.Controllers
                 return StatusCode(500, new { error = "Error retrieving expiring documents.", details = ex.Message });
             }
         }
+        [Authorize]
+        [HttpPut("documents/{documentId}/renew")]
+        public async Task<IActionResult> RenewDocumentExpiry(Guid documentId, [FromBody] RenewDocumentExpiryDto model)
+        {
+            LogToken();
+            try
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("p_doc_id", documentId);
+                parameters.Add("p_new_expiry_date", model.newExpiryDate);
+                parameters.Add("p_updated_by", model.updated_by);
+
+                var result = await _service.RenewDocumentExpiry(parameters);
+                return Ok(new { message = "Document expiry updated successfully", result });
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Error renewing document expiry for DocumentId: {DocumentId}", documentId);
+                return StatusCode(500, new { error = "Error renewing document expiry.", details = ex.Message });
+            }
+        }
+
     }
 }

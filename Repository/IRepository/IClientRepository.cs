@@ -25,6 +25,8 @@ namespace TMCC.Repository.IRepository
         // Expiring Document methods
         Task<IEnumerable<ClientDocumentExpiryDTO>> GetDocumentsExpiringInDaysAsync(int days);
         Task<IEnumerable<ClientDocumentExpiryDTO>> GetDocumentsByNameAndExpiryAsync(string documentName, int days);
+        Task<int> RenewClientDocumentExpiryAsync(Guid documentId, Guid clientId, string newExpiryDate, string updatedBy);
+
 
     }
 }

@@ -42,6 +42,10 @@ namespace TMCC.Services
         {
             return await _repo.GetCompanyDocumentsExpiringInDays(days);
         }
+        public async Task<int> RenewDocumentExpiry(DynamicParameters parameters)
+        {
+            return await _repo.RenewDocumentExpiry(parameters);
+        }
 
     }
 }

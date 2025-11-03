@@ -61,6 +61,8 @@ namespace TMCC.Services
         public async Task<IEnumerable<ClientDocumentExpiryDTO>> GetDocumentsByNameAndExpiryAsync(string documentName, int days)
             => await _clientRepository.GetDocumentsByNameAndExpiryAsync(documentName, days);
 
+        public async Task<int> RenewClientDocumentExpiryAsync(Guid documentId, Guid clientId, string newExpiryDate, string updatedBy)
+    => await _clientRepository.RenewClientDocumentExpiryAsync(documentId, clientId, newExpiryDate, updatedBy);
 
     }
 }
