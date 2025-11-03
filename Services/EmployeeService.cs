@@ -1,4 +1,5 @@
 ﻿using TMCC.Models;
+using TMCC.Repository;
 using TMCC.Repository.IRepository;
 using TMCC.Services.IServices;
 
@@ -49,5 +50,7 @@ namespace TMCC.Services
         public async Task<IEnumerable<EmployeeDocumentExpiry>> GetDocumentsByNameAndExpiryAsync(string documentName, DateTime expiryDate)
             => await _employeeRepository.GetDocumentsByNameAndExpiryAsync(documentName, expiryDate);
 
+        public async Task<int> RenewEmpDocumentExpiryAsync(Guid documentId, Guid empId, string newExpiryDate, string updatedBy)
+  => await _employeeRepository.RenewEmpDocumentExpiryAsync(documentId, empId, newExpiryDate, updatedBy);
     }
 }

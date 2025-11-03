@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using TMCC.Models;
+using TMCC.Services;
 using TMCC.Services.IServices;
 
 namespace TMCC.Controllers
@@ -293,6 +294,26 @@ namespace TMCC.Controllers
                 return StatusCode(500, new { error = "Error retrieving documents by name and expiry.", details = ex.Message });
             }
         }
+        [Authorize]
+        [HttpPut("{empId}/documents/{documentId}/renew")]
+        public async Task<IActionResult> RenewEmptDocumentExpiry(Guid empId, Guid documentId, [FromBody] RenewClientDocumentExpiryDto model)
+        {
+            try
+            {
+                if (model == null || string.IsNullOrWhiteSpace(model.NewExpiryDate) || string.IsNullOrWhiteSpace(model.UpdatedBy))
+                    return BadRequest(new { error = "NewExpiryDate and UpdatedBy are required." });
 
+                var result = await _employeeService.RenewEmpDocumentExpiryAsync(documentId, empId, model.NewExpiryDate, model.UpdatedBy);
+
+                return result > 0
+                    ? Ok(new { message = "Employee document expiry renewed successfully." })
+                    : NotFound(new { error = "Document not found or could not be updated." });
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Error renewing Employee document expiry for DocumentId: {DocumentId}", documentId);
+                return StatusCode(500, new { error = "Error renewing Employee document expiry.", details = ex.Message });
+            }
+        }
     }
 }

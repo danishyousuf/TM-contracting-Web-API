@@ -55,6 +55,10 @@ namespace TMCC.Repository
                 commandType: System.Data.CommandType.StoredProcedure
             );
         }
+        public async Task<int> RenewDocumentExpiry(DynamicParameters parameters)
+        {
+            return await _db.ExecuteNonQueryAsync("sp_RenewCompanyDocumentExpiry", parameters);
+        }
 
     }
 }

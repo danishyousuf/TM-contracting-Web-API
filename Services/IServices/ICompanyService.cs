@@ -11,6 +11,7 @@ namespace TMCC.Services.IServices
         Task<int> DeleteCompanyDocument(DynamicParameters parameters);
         Task<IEnumerable<dynamic>> GetCompanyDocuments(string companyId);
         Task<IEnumerable<CompanyDocumentExpiryDto>> GetCompanyDocumentsExpiringInDays(int days);
+        Task<int> RenewDocumentExpiry(DynamicParameters parameters);
 
     }
 }

@@ -339,6 +339,28 @@ namespace TMCC.Controllers
                 return StatusCode(500, new { error = "Error retrieving expiring documents by name.", details = ex.Message });
             }
         }
+        [Authorize]
+        [HttpPut("{clientId}/documents/{documentId}/renew")]
+        public async Task<IActionResult> RenewClientDocumentExpiry(Guid clientId, Guid documentId, [FromBody] RenewClientDocumentExpiryDto model)
+        {
+            try
+            {
+                if (model == null || string.IsNullOrWhiteSpace(model.NewExpiryDate) || string.IsNullOrWhiteSpace(model.UpdatedBy))
+                    return BadRequest(new { error = "NewExpiryDate and UpdatedBy are required." });
+
+                var result = await _clientService.RenewClientDocumentExpiryAsync(documentId, clientId, model.NewExpiryDate, model.UpdatedBy);
+
+                return result > 0
+                    ? Ok(new { message = "Client document expiry renewed successfully." })
+                    : NotFound(new { error = "Document not found or could not be updated." });
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Error renewing client document expiry for DocumentId: {DocumentId}", documentId);
+                return StatusCode(500, new { error = "Error renewing client document expiry.", details = ex.Message });
+            }
+        }
+
 
     }
 }

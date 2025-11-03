@@ -18,6 +18,8 @@ namespace TMCC.Repository.IRepository
         Task<int> DeleteDocumentAsync(Guid documentId, string deletedBy);
         Task<IEnumerable<EmployeeDocumentExpiry>> GetDocumentsExpiringBeforeDateAsync(DateTime expiryDate);
         Task<IEnumerable<EmployeeDocumentExpiry>> GetDocumentsByNameAndExpiryAsync(string documentName, DateTime expiryDate);
+        Task<int> RenewEmpDocumentExpiryAsync(Guid documentId, Guid empId, string newExpiryDate, string updatedBy);
+
 
     }
 }
